@@ -1,0 +1,43 @@
+# set .env vars: TZ, PG_VERSION: 15.4
+#    PG_DATADIR, PG_DATAINIT, POSTGRES_USER, POSTGRES_PASSWORD
+version: '3'
+
+services:
+  postgresql:
+    container_name: postgres
+    image: postgres:${PG_VERSION}-alpine  
+    ports:
+      - "5433:5433"
+    environment:
+      - TZ
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD # set in .env
+      - POSTGRES_INITDB_ARGS="--auth-host=md5"
+    restart: unless-stopped
+    volumes:
+      - pg_datainit:/docker-entrypoint-initdb.d        
+      - pg_datadir:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "sh", "-c", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 1m
+      timeout: 5s
+      retries: 5
+    networks:
+      - postgres
+
+volumes:
+  pg_datadir:
+     driver_opts:
+           type: none
+           device: ${PG_DATADIR}
+           o: bind
+  pg_datainit:
+     driver_opts:
+           type: none
+           device: ${PG_DATAINIT}
+           o: bind
+           
+networks:
+  postgres:
+    external: true
